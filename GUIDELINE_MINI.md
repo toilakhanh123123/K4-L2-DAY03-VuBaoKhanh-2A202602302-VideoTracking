@@ -1,74 +1,23 @@
-# Mini annotation guideline — Ngày 3 (tracking)
+# HƯỚNG DẪN GÁN NHÃN THEO DÕI ĐỐI TƯỢNG (MINI ANNOTATION GUIDELINES)
 
-> Điền file này **trong lúc gán nhãn**, không phải sau khi xong. Mỗi lần bạn dừng
-> lại nghĩ "cái này tính sao nhỉ?" thì đó là một dòng phải ghi vào đây.
->
-> Đây là tài liệu mà người gán nhãn tiếp theo sẽ đọc để làm giống bạn. Nếu hai
-> người trong nhóm gán khác nhau, gần như luôn là vì file này chưa nói rõ — chứ
-> không phải vì ai kém.
-
-Nhóm / tên: `...`
-Clip: `clip_01`, `clip_02`
+Tài liệu này quy chuẩn hóa quy trình gán nhãn (bounding box và ID) cho xe cộ trong chuỗi video nhằm tối đa hóa độ chính xác và tính nhất quán với mô hình AI.
 
 ---
 
-## 1. Phạm vi: gán cái gì, không gán cái gì
+## 1. Nguyên tắc vẽ Bounding Box (BBox Tightness)
+- **Bám sát biên thực tế:** Hộp nhận diện phải ôm sát viền ngoài cùng của lốp xe, gương chiếu hậu và các chi tiết nhô ra của vỏ xe.
+- **Không vẽ dư thừa:** Tránh kéo rộng hộp ra khoảng không hậu cảnh hoặc bóng đổ của xe dưới lòng đường (gây tăng lỗi FP hoặc sai số LocA).
+- **Nhất quán kích thước:** Đảm bảo bbox phủ kín vật thể đồng đều giữa các khung hình liên tiếp khi xe không đổi hướng đột ngột.
 
-Một lớp duy nhất: **`vehicle`** — xe bốn bánh (xe con, van, xe buýt, xe tải).
+## 2. Quy chuẩn gán nhãn Xe Bus lớn và Xe Toa dài
+- **Bao phủ toàn diện:** Bắt buộc vẽ 1 bbox lớn duy nhất bao trùm từ đầu xe đến hết đuôi xe bus. Không được chia cắt xe bus thành nhiều hộp nhỏ hoặc bỏ quên phần toa phía sau.
+- **Khi xe bus bị che khuất một phần:** Tiếp tục duy trì kích thước hộp ước lượng bao trọn xe cho đến khi xe ra khỏi vùng chồng lấn.
 
-| Gán | Không gán |
-| --- | --- |
-| xe con, SUV, taxi, xe bán tải | người đi bộ |
-| van, minivan | xe đạp |
-| xe buýt, minibus | **xe máy / mô tô** |
-| xe tải, xe đầu kéo | xe trong ảnh quảng cáo, trong gương, dưới bóng nước |
+## 3. Quản lý che khuất (Occlusion) và Điểm mù
+- **Ngưỡng gán nhãn:** Chỉ thực hiện gán nhãn khi vật thể xuất hiện tối thiểu **30% diện tích** có thể nhận dạng được bằng mắt thường.
+- **Mất dấu tạm thời (Dưới 5 frames):** Nếu xe bị che khuất bởi cột đèn, biển báo hoặc xe bus lớn khác rồi lộ diện ngay sau đó, bắt buộc phải **giữ nguyên ID cũ**.
+- **Mất dấu kéo dài (Trên 5 frames):** Nếu xe đi khuất hẳn vào điểm mù quá lâu và không thể xác định chắc chắn diện mạo cũ bằng mắt thường, hãy gán một **ID mới hoàn toàn** khi xe xuất hiện trở lại.
 
-Bổ sung của nhóm (nếu có): `...`
-
-## 2. Luật ID — phần quan trọng nhất
-
-| Tình huống | Luật của nhóm | Vì sao |
-| --- | --- | --- |
-| Xe bị che một phần rồi hiện lại | giữ nguyên ID nếu bị che **dưới ... frame** (mặc định của lab: 25 frame = 2 giây @ 12.5 fps) | `...` |
-| Xe bị che lâu hơn ngưỡng trên | `...` | `...` |
-| Xe rời khung hình rồi quay lại | mặc định: **track mới** | `...` |
-| Hai xe cắt nhau / chồng lên nhau | `...` | `...` |
-
-## 3. Luật bbox
-
-| Tình huống | Luật của nhóm |
-| --- | --- |
-| Xe bị cắt bởi rìa ảnh | bbox chạm đúng rìa, không đoán phần ngoài ảnh |
-| Xe bị xe khác che một phần | bbox ôm phần **nhìn thấy được** |
-| Xe vừa xuất hiện, còn rất nhỏ / rất mờ | bắt đầu track từ frame đầu tiên xác định được là xe bốn bánh; ngưỡng nhóm chọn: `...` |
-| Xe đang đỗ, không di chuyển | `...` |
-| Keyframe đặt dày ở đâu | `...` |
-
-## 4. Ít nhất ba ca mơ hồ đã gặp thật
-
-Ghi **frame cụ thể** và **ID cụ thể**, không ghi chung chung.
-
-### Ca 1
-- Clip / frame / ID: `...`
-- Tình huống: `...`
-- Quyết định: `...`
-- Lý do: `...`
-
-### Ca 2
-- Clip / frame / ID: `...`
-- Tình huống: `...`
-- Quyết định: `...`
-- Lý do: `...`
-
-### Ca 3
-- Clip / frame / ID: `...`
-- Tình huống: `...`
-- Quyết định: `...`
-- Lý do: `...`
-
-## 5. Sửa gì sau khi chấm với gold và sau khi kiểm chéo
-
-Luật nào trong file này hoá ra còn thiếu hoặc còn mơ hồ? Viết lại cho rõ:
-
-- `...`
-- `...`
+## 4. Quản lý ID Nhất quán (Identity Management)
+- Mỗi xe là một thực thể duy nhất xuyên suốt video. Tuyệt đối không tự ý đổi ID khi xe di chuyển bình thường không bị che khuất.
+- Kiểm tra chéo định kỳ các phân cảnh giao cắt (overlap) giữa 2 xe để đảm bảo ID không bị đổi chéo cho nhau.
